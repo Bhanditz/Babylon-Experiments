@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Babylon - Basic scene</title>
+
+<style>
+html, body {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#renderCanvas {
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+</style>
+
+<script src="babylon.js"></script>
+<script src="hand.js"></script>
+<script src="babylon.Densaugeo.js"></script>
+
+</head>
+
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+
+<script type="text/javascript">
+// Get the canvas element from our HTML below
+var canvas = document.querySelector("#renderCanvas");
+
+// Load the BABYLON 3D engine
+var engine = new BABYLON.Engine(canvas, true);
+
+BABYLON.SceneLoader.Load('/', 'Maznar.babylon', engine, function(scene) {
+  the_scene = scene;
+  
+  the_scene.meshes.forEach(function(v, i) {
+    if(v.convertToFlatShadedMesh) {
+      console.log(i + ' has geometry');
+      v.convertToFlatShadedMesh();
+    }
+    
+    v.refreshBoundingInfo();
+  });
+  
+  // This creates and positions a free camera
+  camera = new BABYLON.Densaugeo.FlyingCamera("camera1", BABYLON.Matrix.FromArray([1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, -10, 5, 1]), scene, canvas);
+  
+  // Change the scene background color to green.
+  scene.clearColor = new BABYLON.Color3(0.75, 0.75, 0.75);
+  
+  scene.ambientColor = BABYLON.Color3.FromArray([0.5, 0.5, 0.5]);
+  
+  directionalLight = new BABYLON.DirectionalLight('light2', new BABYLON.Vector3(7.1, -2.75, -10), scene);
+  directionalLight.intensity = 0.5;
+  
+  // Register a render loop to repeatedly render the scene
+  engine.runRenderLoop(function () {
+    scene.render();
+  });
+});
+
+
+// Watch for browser/canvas resize events
+window.addEventListener("resize", function () {
+  engine.resize();
+});
+</script>
+
+</html>

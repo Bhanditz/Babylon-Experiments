@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Babylon - Basic scene</title>
+
+<style>
+html, body {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#renderCanvas {
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+</style>
+
+<script src="babylon.js"></script>
+<script src="hand.js"></script>
+<script src="babylon.Densaugeo.js"></script>
+
+</head>
+
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+
+<script type="text/javascript">
+var MeshForge = {};
+
+MeshForge.meshCache = {};
+
+MeshForge.Hex = function(name, options, scene) {
+  var r = options.radius || 1;
+  var h = options.thickness || 0.25;
+  
+  var result = new BABYLON.Mesh('test_mesh', scene);
+  
+  var indices = [];
+  var positions = [];
+  var normals = [];
+  var uvs = [];
+  
+  var r_o = r*2/Math.sqrt(3);
+  
+  for(var i = 0; i < 6; ++i) {
+    var θ = Math.PI/6 + i*Math.PI/3;
+    
+    // Not sure about UVs
+    positions.push(-r_o*Math.cos(θ), r_o*Math.sin(θ), h);
+    normals.push(-Math.cos(θ)*2/Math.sqrt(5), Math.sin(θ)*2/Math.sqrt(5), 1/Math.sqrt(5));
+    uvs.push(0.5 - 0.5*Math.cos(θ), 0.5 + 0.5*Math.sin(θ));
+  }
+  
+  // Make a second hexagon, with normals pointed down
+  for(var i = 0; i < 6; ++i) {
+    var θ = Math.PI/6 + i*Math.PI/3;
+    
+    // Not sure about UVs
+    positions.push(-r_o*Math.cos(θ), r_o*Math.sin(θ), 0);
+    normals.push(-Math.cos(θ)*2/Math.sqrt(5), Math.sin(θ)*2/Math.sqrt(5), -1/Math.sqrt(5));
+    uvs.push(0.5 - 0.5*Math.cos(θ), 0.5 + 0.5*Math.sin(θ));
+  }
+  
+  // Top
+  indices.push(0, 1, 2);
+  indices.push(0, 2, 3);
+  indices.push(0, 3, 4);
+  indices.push(0, 4, 5);
+  
+  // Walls
+  for(var i = 0; i < 6; ++i) {
+    var next = (i + 1) % 6;
+    indices.push(i, i + 6, next + 6);
+    indices.push(i, next + 6, next);
+  }
+  
+  // Bottom
+  indices.push(6, 8, 7);
+  indices.push(6, 9, 8);
+  indices.push(6, 10, 9);
+  indices.push(6, 11, 10);
+  
+  // Sides
+  BABYLON.VertexData._ComputeSides(BABYLON.Mesh.FRONTSIDE, positions, indices, normals, uvs);
+  
+  var vertexData = new BABYLON.VertexData();
+  
+  vertexData.indices = indices;
+  vertexData.positions = positions;
+  vertexData.normals = normals;
+  vertexData.uvs = uvs;
+  
+  vertexData.applyToMesh(result, true);
+  
+  result.position.copyFrom(options.position);
+  
+  result.subMeshes = [];
+  result.subMeshes.push(new BABYLON.SubMesh(0, 0, 18, 0, 12, result));
+  result.subMeshes.push(new BABYLON.SubMesh(1, 0, 36, 12, 48, result));
+  
+  if(options.material) {
+    result.material = options.material;
+  }
+  if(options.position) {
+    result.position.copyFrom(options.position);
+  }
+  if(options.rotation) {
+    result.position.copyFrom(options.rotation);
+  }
+  if(options.scale) {
+    result.position.copyFrom(options.scale);
+  }
+  
+  
+  return result;
+}
+
+// Get the canvas element from our HTML below
+var canvas = document.querySelector("#renderCanvas");
+
+// Load the BABYLON 3D engine
+var engine = new BABYLON.Engine(canvas, true);
+
+var scene = new BABYLON.Scene(engine);
+
+// This creates and positions a free camera
+var camera = new BABYLON.Densaugeo.FlyingCamera("camera1", BABYLON.Matrix.FromArray([1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 10, 2, 1]), scene, canvas);
+
+// Change the scene background color to green.
+scene.clearColor = new BABYLON.Color3(0.75, 0.75, 0.75);
+
+scene.ambientColor = BABYLON.Color3.FromArray([0.5, 0.5, 0.5]);
+
+var directionalLight = new BABYLON.DirectionalLight('light2', new BABYLON.Vector3(7.1, -2.75, -10), scene);
+directionalLight.intensity = 0.5;
+
+var cyan = new BABYLON.StandardMaterial('cyan', scene);
+cyan.ambientColor = new BABYLON.Color3(0, 1, 1);
+cyan.diffuseColor = new BABYLON.Color3(0, 1, 1);
+
+var dark_gray = new BABYLON.StandardMaterial('dark_gray', scene);
+dark_gray.ambientColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+dark_gray.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+
+var gray = new BABYLON.StandardMaterial('gray', scene);
+gray.ambientColor = new BABYLON.Color3(0.6, 0.6, 0.6);
+gray.diffuseColor = new BABYLON.Color3(0.6, 0.6, 0.6);
+
+var cyanTop = new BABYLON.MultiMaterial('hex', scene);
+cyanTop.subMaterials.push(cyan, dark_gray);
+
+var grayTop = new BABYLON.MultiMaterial('hex', scene);
+grayTop.subMaterials.push(gray, dark_gray);
+
+
+var test_mesh = new MeshForge.Hex('test_mesh', {
+  radius: 1,
+  thickness: 0.25,
+  position: BABYLON.Vector3.FromArray([0, 0, 0]),
+  material: cyanTop
+}, scene);
+
+test_mesh.convertToFlatShadedMesh();
+
+test_mesh.createInstance('test_mesh.001');
+scene.getMeshByName('test_mesh.001').position.x = 2;
+
+test_mesh.createInstance('test_mesh.002');
+scene.getMeshByName('test_mesh.002').position.x = 4;
+
+test_mesh.createInstance('test_mesh.003');
+scene.getMeshByName('test_mesh.003').position.x = 6;
+
+var rock_t2 = new MeshForge.Hex('test_mesh', {
+  radius: 1,
+  thickness: 0.5,
+  position: BABYLON.Vector3.FromArray([1, Math.sqrt(3), 0]),
+  material: grayTop
+}, scene);
+
+rock_t2.convertToFlatShadedMesh();
+
+// Register a render loop to repeatedly render the scene
+engine.runRenderLoop(function () {
+  scene.render();
+});
+
+
+// Watch for browser/canvas resize events
+window.addEventListener("resize", function () {
+  engine.resize();
+});
+</script>
+
+</html>
